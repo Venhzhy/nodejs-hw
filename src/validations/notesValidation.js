@@ -2,10 +2,14 @@ import { celebrate, Joi, Segments } from 'celebrate';
 import { isValidObjectId } from 'mongoose';
 import { TAGS } from '../constants/tags.js';
 
-const mongoIdSchema = Joi.string().custom((value, helpers) => {
-  if (!isValidObjectId(value)) return helpers.error('any.invalid');
-  return value;
-});
+const mongoIdSchema = Joi.string()
+  .custom((value, helpers) => {
+    if (!isValidObjectId(value)) {
+      return helpers.error('any.invalid');
+    }
+    return value;
+  })
+  .required();
 
 export const getAllNotesSchema = celebrate({
   [Segments.QUERY]: Joi.object({
@@ -40,3 +44,4 @@ export const updateNoteSchema = celebrate({
     tag: Joi.string().valid(...TAGS).optional(),
   }).min(1),
 });
+
