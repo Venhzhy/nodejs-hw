@@ -3,33 +3,32 @@ import { Note } from '../models/note.js';
 
 export const getAllNotes = async (req, res, next) => {
   try {
-    const { page, perPage, tag, search } = req.query;
+    const { page = 1, perPage = 10, tag, search } = req.query;
 
-    const p = Number(page) || 1;
-    const pp = Number(perPage) || 10;
+    const skip = (page - 1) * perPage;
 
-    const filter = {};
-    if (tag) filter.tag = tag;
-    if (search) filter.$text = { $search: search };
+    const query = Note.find()
+      .where('userId')
+      .equals(req.user._id);
 
-    const skip = (p - 1) * pp;
-
-    const [totalNotes, notes] = await Promise.all([
-      Note.countDocuments(filter),
-      Note.find(filter).skip(skip).limit(pp),
-    ]);
-
-    const totalPages = Math.ceil(totalNotes / pp);
-
-    if (p > totalPages && totalNotes > 0) {
-      throw createHttpError(404, 'Цієї сторінки не існує');
+    if (tag) {
+      query.where('tag').equals(tag);
     }
 
+    if (search) {
+      query.where({ $text: { $search: search } });
+    }
+
+    const [totalNotes, notes] = await Promise.all([
+      Note.countDocuments({ userId: req.user._id }),
+      query.skip(skip).limit(Number(perPage)),
+    ]);
+
     res.status(200).json({
-      page: p,
-      perPage: pp,
+      page: Number(page),
+      perPage: Number(perPage),
       totalNotes,
-      totalPages,
+      totalPages: Math.ceil(totalNotes / perPage),
       notes,
     });
   } catch (error) {
@@ -39,11 +38,13 @@ export const getAllNotes = async (req, res, next) => {
 
 export const getNoteById = async (req, res, next) => {
   try {
-    const { noteId } = req.params;
+    const note = await Note.findOne({
+      _id: req.params.noteId,
+      userId: req.user._id,
+    });
 
-    const note = await Note.findById(noteId);
     if (!note) {
-      throw createHttpError(404, 'Замітку не знайдено');
+      throw createHttpError(404, 'Note not found');
     }
 
     res.status(200).json(note);
@@ -54,7 +55,11 @@ export const getNoteById = async (req, res, next) => {
 
 export const createNote = async (req, res, next) => {
   try {
-    const note = await Note.create(req.body);
+    const note = await Note.create({
+      ...req.body,
+      userId: req.user._id,
+    });
+
     res.status(201).json(note);
   } catch (error) {
     next(error);
@@ -63,16 +68,17 @@ export const createNote = async (req, res, next) => {
 
 export const updateNote = async (req, res, next) => {
   try {
-    const { noteId } = req.params;
-
-    const updatedNote = await Note.findByIdAndUpdate(
-      noteId,
+    const updatedNote = await Note.findOneAndUpdate(
+      {
+        _id: req.params.noteId,
+        userId: req.user._id,
+      },
       req.body,
       { new: true, runValidators: true }
     );
 
     if (!updatedNote) {
-      throw createHttpError(404, 'Замітку не знайдено для оновлення');
+      throw createHttpError(404, 'Note not found');
     }
 
     res.status(200).json(updatedNote);
@@ -83,11 +89,13 @@ export const updateNote = async (req, res, next) => {
 
 export const deleteNote = async (req, res, next) => {
   try {
-    const { noteId } = req.params;
+    const deletedNote = await Note.findOneAndDelete({
+      _id: req.params.noteId,
+      userId: req.user._id,
+    });
 
-    const deletedNote = await Note.findByIdAndDelete(noteId);
     if (!deletedNote) {
-      throw createHttpError(404, 'Замітку не знайдено для видалення');
+      throw createHttpError(404, 'Note not found');
     }
 
     res.status(200).json(deletedNote);
@@ -95,5 +103,6 @@ export const deleteNote = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
