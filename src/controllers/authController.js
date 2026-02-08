@@ -3,11 +3,12 @@ import handlebars from 'handlebars';
 import fs from 'fs/promises';
 import path from 'path';
 import createHttpError from 'http-errors';
+import bcrypt from 'bcrypt';
 import { User } from '../models/user.js';
-import { sendMail } from '../utils/sendMail.js';
-import bcrypt from 'bcryptjs';
 import { Session } from '../models/session.js';
+import { sendEmail } from '../utils/sendEmail.js';
 import { createSession, setSessionCookies } from '../services/auth.js';
+
 
 export const registerUser = async (req, res, next) => {
   try {
@@ -165,16 +166,18 @@ export const requestResetEmail = async (req, res, next) => {
       link: `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`,
     });
 
-    await sendMail({
+    await sendEmail({
+      from: process.env.SMTP_FROM,
       to: email,
       subject: 'Reset password',
       html,
     });
 
+
     res.status(200).json({
       message: 'Password reset email sent successfully',
     });
-  } catch (_rr) {
+  } catch (_err) {
     next(
       createHttpError(
         500,
