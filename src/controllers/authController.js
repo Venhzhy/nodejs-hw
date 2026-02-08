@@ -6,7 +6,7 @@ import createHttpError from 'http-errors';
 import bcrypt from 'bcrypt';
 import { User } from '../models/user.js';
 import { Session } from '../models/session.js';
-import { sendMail } from '../utils/sendMail.js';
+import { sendEmail } from '../utils/sendMail.js';
 import { createSession, setSessionCookies } from '../services/auth.js';
 
 
@@ -166,7 +166,7 @@ export const requestResetEmail = async (req, res, next) => {
       link: `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`,
     });
 
-    await sendMail({
+    await sendEmail({
       from: process.env.SMTP_FROM,
       to: email,
       subject: 'Reset password',
