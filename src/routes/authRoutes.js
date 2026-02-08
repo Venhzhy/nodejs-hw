@@ -33,13 +33,13 @@ router.post(
 
 router.post(
   '/auth/request-reset-email',
-  celebrate({ body: requestResetEmailSchema }),
+  celebrate(requestResetEmailSchema),
   requestResetEmail
 );
 
 router.post(
   '/auth/reset-password',
-  celebrate({ body: resetPasswordSchema }),
+  celebrate(resetPasswordSchema),
   resetPassword
 );
 
@@ -47,4 +47,5 @@ router.post('/auth/refresh', refreshUserSession);
 router.post('/auth/logout', logoutUser);
 
 export default router;
+
 
